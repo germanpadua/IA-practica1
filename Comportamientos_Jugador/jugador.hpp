@@ -4,6 +4,11 @@
 #include "comportamientos/comportamiento.hpp"
 using namespace std;
 
+const int NORTE = 0;
+const int SUR = 2;
+const int ESTE = 1;
+const int OESTE = 3;
+
 class ComportamientoJugador : public Comportamiento{
 
   public:
@@ -25,6 +30,8 @@ class ComportamientoJugador : public Comportamiento{
       posXActual = 99;
       posYActual = 99;
     }
+
+    void rellenarMapa(bool sensor_posicion, Sensores sensores);
 
     ComportamientoJugador(const ComportamientoJugador & comport) : Comportamiento(comport){}
     ~ComportamientoJugador(){}
