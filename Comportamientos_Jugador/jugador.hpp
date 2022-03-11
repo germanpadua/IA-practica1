@@ -15,6 +15,15 @@ class ComportamientoJugador : public Comportamiento{
       ultimaAccion = actIDLE;
       girar_derecha = false;
       bien_situado = false;
+      
+      for(int i=0; i < 199; i++){
+        for(int j=0; j<199; j++){
+          mapaSinSensor[i][j] = '?';
+        }
+      }
+
+      posXActual = 99;
+      posYActual = 99;
     }
 
     ComportamientoJugador(const ComportamientoJugador & comport) : Comportamiento(comport){}
@@ -28,6 +37,9 @@ class ComportamientoJugador : public Comportamiento{
   // Declarar aquí las variables de estado
   int fil, col, brujula;
   bool girar_derecha, bien_situado;
+  vector< vector< unsigned char> > mapaSinSensor;
+  int posXActual;
+  int posYActual;
   Action ultimaAccion;
 };
 
