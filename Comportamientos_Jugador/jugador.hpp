@@ -21,10 +21,10 @@ class ComportamientoJugador : public Comportamiento{
       girar_derecha = false;
       bien_situado = false;
       
+      vector<unsigned char> aux(199, '?');
+
       for(int i=0; i < 199; i++){
-        for(int j=0; j<199; j++){
-          mapaSinSensor[i][j] = '?';
-        }
+        mapaSinSensor.push_back(aux);
       }
 
       posXActual = 99;

@@ -73,6 +73,24 @@ Action ComportamientoJugador::think(Sensores sensores)
 		break;
 	}
 
+	switch(sensores.sentido){
+		case norte:
+			brujula = 0;
+		break;
+
+		case sur:
+			brujula = 2;
+		break;
+
+		case este:
+			brujula = 1;
+		break;
+
+		case oeste:
+			brujula = 3;
+		break;
+	}
+
 	if (sensores.terreno[0] == 'G' && !bien_situado)
 	{
 		bien_situado = true;
@@ -82,7 +100,7 @@ Action ComportamientoJugador::think(Sensores sensores)
 		//Rellenar mapaResultado con mapaSinSensor
 	}
 
-	rellenarMapa(bien_situado, sensores);
+	rellenarMapa(true, sensores);
 
 	//Decidir qué acción tomar
 	if ((sensores.terreno[2] == 'T' || sensores.terreno[2] == 'S' || sensores.terreno[2] == 'G') && sensores.superficie[2] == '_')
@@ -105,29 +123,30 @@ Action ComportamientoJugador::think(Sensores sensores)
 
 void ComportamientoJugador::rellenarMapa(bool sensor_posicion, Sensores sensores)
 {
-	int cont = -1;
+	int cont;
 
 	if (!sensor_posicion)
 	{
-		if (mapaSinSensor[fil][col] != '?')
+		if (mapaSinSensor[fil][col] == '?')
 			mapaSinSensor[fil][col] = sensores.terreno[0];
 
 		switch (brujula)
 		{
 		case NORTE:
+			cont = -1;
 
-			for (int k = 1; k < 3; k++)
+			for (int k = 1; k < 4; k++)
 			{
-				if (mapaSinSensor[fil - 1][col + cont] != '?')
+				if (mapaSinSensor[fil - 1][col + cont] == '?')
 					mapaSinSensor[fil - 1][col + cont] = sensores.terreno[k];
 				cont++;
 			}
 
 			cont = -2;
 
-			for (int k = 3; k < 9; k++)
+			for (int k = 4; k < 9; k++)
 			{
-				if (mapaSinSensor[fil - 2][col + cont] != '?')
+				if (mapaSinSensor[fil - 2][col + cont] == '?')
 					mapaSinSensor[fil - 2][col + cont] = sensores.terreno[k];
 				cont++;
 			}
@@ -136,52 +155,54 @@ void ComportamientoJugador::rellenarMapa(bool sensor_posicion, Sensores sensores
 
 			for (int k = 9; k < 16; k++)
 			{
-				if (mapaSinSensor[fil - 3][col + cont] != '?')
+				if (mapaSinSensor[fil - 3][col + cont] == '?')
 					mapaSinSensor[fil - 3][col + cont] = sensores.terreno[k];
 				cont++;
 			}
 			break;
 
 		case SUR:
-			for (int k = 1; k < 3; k++)
+			cont = 1;
+			for (int k = 1; k < 4; k++)
 			{
-				if (mapaSinSensor[fil + 1][col + cont] != '?')
+				if (mapaSinSensor[fil + 1][col + cont] == '?')
 					mapaSinSensor[fil + 1][col + cont] = sensores.terreno[k];
-				cont++;
+				cont--;
 			}
 
-			cont = -2;
+			cont = 2;
 
-			for (int k = 3; k < 9; k++)
+			for (int k = 4; k < 9; k++)
 			{
-				if (mapaSinSensor[fil + 2][col + cont] != '?')
+				if (mapaSinSensor[fil + 2][col + cont] == '?')
 					mapaSinSensor[fil + 2][col + cont] = sensores.terreno[k];
-				cont++;
+				cont--;
 			}
 
-			cont = -3;
+			cont = 3;
 
 			for (int k = 9; k < 16; k++)
 			{
-				if (mapaSinSensor[fil + 3][col + cont] != '?')
+				if (mapaSinSensor[fil + 3][col + cont] == '?')
 					mapaSinSensor[fil + 3][col + cont] = sensores.terreno[k];
-				cont++;
+				cont--;
 			}
 			break;
 
 		case ESTE:
-			for (int k = 1; k < 3; k++)
+			cont = -1;
+			for (int k = 1; k < 4; k++)
 			{
-				if (mapaSinSensor[fil + cont][col + 1] != '?')
+				if (mapaSinSensor[fil + cont][col + 1] == '?')
 					mapaSinSensor[fil + cont][col + 1] = sensores.terreno[k];
 				cont++;
 			}
 
 			cont = -2;
 
-			for (int k = 3; k < 9; k++)
+			for (int k = 4; k < 9; k++)
 			{
-				if (mapaSinSensor[fil + cont][col + 2] != '?')
+				if (mapaSinSensor[fil + cont][col + 2] == '?')
 					mapaSinSensor[fil + cont][col + 2] = sensores.terreno[k];
 				cont++;
 			}
@@ -190,7 +211,7 @@ void ComportamientoJugador::rellenarMapa(bool sensor_posicion, Sensores sensores
 
 			for (int k = 9; k < 16; k++)
 			{
-				if (mapaSinSensor[fil + cont][col + 3] != '?')
+				if (mapaSinSensor[fil + cont][col + 3] == '?')
 					mapaSinSensor[fil + cont][col + 3] = sensores.terreno[k];
 				cont++;
 			}
@@ -198,29 +219,30 @@ void ComportamientoJugador::rellenarMapa(bool sensor_posicion, Sensores sensores
 			break;
 
 		case OESTE:
-			for (int k = 1; k < 3; k++)
+			cont = 1;
+			for (int k = 1; k < 4; k++)
 			{
-				if (mapaSinSensor[fil + cont][col + 1] != '?')
+				if (mapaSinSensor[fil + cont][col + 1] == '?')
 					mapaSinSensor[fil + cont][col + 1] = sensores.terreno[k];
-				cont++;
+				cont--;
 			}
 
-			cont = -2;
+			cont = 2;
 
-			for (int k = 3; k < 9; k++)
+			for (int k = 4; k < 9; k++)
 			{
-				if (mapaSinSensor[fil + cont][col + 2] != '?')
+				if (mapaSinSensor[fil + cont][col + 2] == '?')
 					mapaSinSensor[fil + cont][col + 2] = sensores.terreno[k];
-				cont++;
+				cont--;
 			}
 
-			cont = -3;
+			cont = 3;
 
 			for (int k = 9; k < 16; k++)
 			{
-				if (mapaSinSensor[fil + cont][col + 2] != '?')
+				if (mapaSinSensor[fil + cont][col + 2] == '?')
 					mapaSinSensor[fil + cont][col + 2] = sensores.terreno[k];
-				cont++;
+				cont--;
 			}
 			break;
 		}
@@ -233,20 +255,21 @@ void ComportamientoJugador::rellenarMapa(bool sensor_posicion, Sensores sensores
 		switch (brujula)
 		{
 		case NORTE:
+			cont = -1;
 
-			for (int k = 1; k < 3; k++)
+			for (int k = 1; k < 4; k++)
 			{
-				if (mapaResultado[fil - 1][col + cont] != '?')
-					mapaResultado[fil - 1][col + cont] = sensores.terreno[k];
+				if (mapaResultado[sensores.posF - 1][sensores.posC + cont] == '?')
+					mapaResultado[sensores.posF - 1][sensores.posC + cont] = sensores.terreno[k];
 				cont++;
 			}
 
 			cont = -2;
 
-			for (int k = 3; k < 9; k++)
+			for (int k = 4; k < 9; k++)
 			{
-				if (mapaResultado[fil - 2][col + cont] != '?')
-					mapaResultado[fil - 2][col + cont] = sensores.terreno[k];
+				if (mapaResultado[sensores.posF - 2][sensores.posC + cont] == '?')
+					mapaResultado[sensores.posF - 2][sensores.posC + cont] = sensores.terreno[k];
 				cont++;
 			}
 
@@ -254,53 +277,55 @@ void ComportamientoJugador::rellenarMapa(bool sensor_posicion, Sensores sensores
 
 			for (int k = 9; k < 16; k++)
 			{
-				if (mapaResultado[fil - 3][col + cont] != '?')
-					mapaResultado[fil - 3][col + cont] = sensores.terreno[k];
+				if (mapaResultado[sensores.posF - 3][sensores.posC + cont] == '?')
+					mapaResultado[sensores.posF - 3][sensores.posC + cont] = sensores.terreno[k];
 				cont++;
 			}
 			break;
 
 		case SUR:
-			for (int k = 1; k < 3; k++)
+			cont = 1;
+			for (int k = 1; k < 4; k++)
 			{
-				if (mapaResultado[fil + 1][col + cont] != '?')
-					mapaResultado[fil + 1][col + cont] = sensores.terreno[k];
-				cont++;
+				if (mapaResultado[sensores.posF + 1][sensores.posC + cont] == '?')
+					mapaResultado[sensores.posF + 1][sensores.posC + cont] = sensores.terreno[k];
+				cont--;
 			}
 
-			cont = -2;
+			cont = 2;
 
-			for (int k = 3; k < 9; k++)
+			for (int k = 4; k < 9; k++)
 			{
-				if (mapaResultado[fil + 2][col + cont] != '?')
-					mapaResultado[fil + 2][col + cont] = sensores.terreno[k];
-				cont++;
+				if (mapaResultado[sensores.posF + 2][sensores.posC + cont] == '?')
+					mapaResultado[sensores.posF + 2][sensores.posC + cont] = sensores.terreno[k];
+				cont--;
 			}
 
-			cont = -3;
+			cont = 3;
 
 			for (int k = 9; k < 16; k++)
 			{
-				if (mapaResultado[fil + 3][col + cont] != '?')
-					mapaResultado[fil + 3][col + cont] = sensores.terreno[k];
-				cont++;
+				if (mapaResultado[sensores.posF + 3][sensores.posC + cont] == '?')
+					mapaResultado[sensores.posF + 3][sensores.posC + cont] = sensores.terreno[k];
+				cont --;
 			}
 			break;
 
 		case ESTE:
-			for (int k = 1; k < 3; k++)
+			cont = -1;
+			for (int k = 1; k < 4; k++)
 			{
-				if (mapaResultado[fil + cont][col + 1] != '?')
-					mapaResultado[fil + cont][col + 1] = sensores.terreno[k];
+				if (mapaResultado[sensores.posF + cont][sensores.posC + 1] == '?')
+					mapaResultado[sensores.posF + cont][sensores.posC + 1] = sensores.terreno[k];
 				cont++;
 			}
 
 			cont = -2;
 
-			for (int k = 3; k < 9; k++)
+			for (int k = 4; k < 9; k++)
 			{
-				if (mapaResultado[fil + cont][col + 2] != '?')
-					mapaResultado[fil + cont][col + 2] = sensores.terreno[k];
+				if (mapaResultado[sensores.posF + cont][sensores.posC + 2] == '?')
+					mapaResultado[sensores.posF + cont][sensores.posC + 2] = sensores.terreno[k];
 				cont++;
 			}
 
@@ -308,37 +333,39 @@ void ComportamientoJugador::rellenarMapa(bool sensor_posicion, Sensores sensores
 
 			for (int k = 9; k < 16; k++)
 			{
-				if (mapaResultado[fil + cont][col + 3] != '?')
-					mapaResultado[fil + cont][col + 3] = sensores.terreno[k];
+				if (mapaResultado[sensores.posF + cont][sensores.posC + 3] == '?')
+					mapaResultado[sensores.posF + cont][sensores.posC + 3] = sensores.terreno[k];
 				cont++;
 			}
 
 			break;
 
 		case OESTE:
-			for (int k = 1; k < 3; k++)
+			cont = 1;
+
+			for (int k = 1; k < 4; k++)
 			{
-				if (mapaResultado[fil + cont][col + 1] != '?')
-					mapaResultado[fil + cont][col + 1] = sensores.terreno[k];
-				cont++;
+				if (mapaResultado[sensores.posF + cont][sensores.posC - 1] == '?')
+					mapaResultado[sensores.posF + cont][sensores.posC - 1] = sensores.terreno[k];
+				cont--;
 			}
 
-			cont = -2;
+			cont = 2;
 
-			for (int k = 3; k < 9; k++)
+			for (int k = 4; k < 9; k++)
 			{
-				if (mapaResultado[fil + cont][col + 2] != '?')
-					mapaResultado[fil + cont][col + 2] = sensores.terreno[k];
-				cont++;
+				if (mapaResultado[sensores.posF + cont][sensores.posC - 2] == '?')
+					mapaResultado[sensores.posF + cont][sensores.posC - 2] = sensores.terreno[k];
+				cont--;
 			}
 
-			cont = -3;
+			cont = 3;
 
 			for (int k = 9; k < 16; k++)
 			{
-				if (mapaResultado[fil + cont][col + 2] != '?')
-					mapaResultado[fil + cont][col + 2] = sensores.terreno[k];
-				cont++;
+				if (mapaResultado[sensores.posF + cont][sensores.posC - 3] == '?')
+					mapaResultado[sensores.posF + cont][sensores.posC - 3] = sensores.terreno[k];
+				cont--;
 			}
 			break;
 		}
