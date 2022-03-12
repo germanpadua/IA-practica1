@@ -16,6 +16,7 @@ class ComportamientoJugador : public Comportamiento{
       // Constructor de la clase
       // Dar el valor inicial a las variables de estado
       fil = col = 99;
+      
       brujula = 0;
       ultimaAccion = actIDLE;
       girar_derecha = false;
@@ -27,8 +28,7 @@ class ComportamientoJugador : public Comportamiento{
         mapaSinSensor.push_back(aux);
       }
 
-      posXActual = 99;
-      posYActual = 99;
+      hay_objetivo = zapatillas = bikini = false;
     }
 
     void rellenarMapa(bool sensor_posicion, Sensores sensores);
@@ -45,8 +45,10 @@ class ComportamientoJugador : public Comportamiento{
   int fil, col, brujula;
   bool girar_derecha, bien_situado;
   vector< vector< unsigned char> > mapaSinSensor;
-  int posXActual;
-  int posYActual;
+  bool hay_objetivo, zapatillas, bikini;
+
+  vector< vector< int> > posicionesCerca;
+
   Action ultimaAccion;
 };
 

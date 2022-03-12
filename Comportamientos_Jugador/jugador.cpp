@@ -73,34 +73,51 @@ Action ComportamientoJugador::think(Sensores sensores)
 		break;
 	}
 
-	switch(sensores.sentido){
+	if (sensores.nivel == 0 || sensores.nivel == 1)
+	{
+		switch (sensores.sentido)
+		{
 		case norte:
-			brujula = 0;
-		break;
+			brujula = NORTE;
+			break;
 
 		case sur:
-			brujula = 2;
-		break;
+			brujula = SUR;
+			break;
 
 		case este:
-			brujula = 1;
-		break;
+			brujula = ESTE;
+			break;
 
 		case oeste:
-			brujula = 3;
-		break;
+			brujula = OESTE;
+			break;
+		}
+	}
+
+	if(sensores.nivel == 0){
+		bien_situado = true;
 	}
 
 	if (sensores.terreno[0] == 'G' && !bien_situado)
 	{
 		bien_situado = true;
-		fil = sensores.posF;
-		col = sensores.posC;
+		
 
 		//Rellenar mapaResultado con mapaSinSensor
+		for(int i=0; i<mapaResultado.size(); i++){
+			for(int j=0; j<mapaResultado.size(); j++){
+				if(mapaSinSensor[fil - sensores.posF + i][col - sensores.posC + j] != '?'){
+					mapaResultado[i][j] = mapaSinSensor[fil - sensores.posF + i][col - sensores.posC + j];
+				}
+			}
+		}
+
+		fil = sensores.posF;
+		col = sensores.posC;
 	}
 
-	rellenarMapa(true, sensores);
+	rellenarMapa(bien_situado, sensores);
 
 	//Decidir qué acción tomar
 	if ((sensores.terreno[2] == 'T' || sensores.terreno[2] == 'S' || sensores.terreno[2] == 'G') && sensores.superficie[2] == '_')
@@ -220,10 +237,11 @@ void ComportamientoJugador::rellenarMapa(bool sensor_posicion, Sensores sensores
 
 		case OESTE:
 			cont = 1;
+
 			for (int k = 1; k < 4; k++)
 			{
-				if (mapaSinSensor[fil + cont][col + 1] == '?')
-					mapaSinSensor[fil + cont][col + 1] = sensores.terreno[k];
+				if (mapaSinSensor[fil + cont][col - 1] == '?')
+					mapaSinSensor[fil + cont][col - 1] = sensores.terreno[k];
 				cont--;
 			}
 
@@ -231,8 +249,8 @@ void ComportamientoJugador::rellenarMapa(bool sensor_posicion, Sensores sensores
 
 			for (int k = 4; k < 9; k++)
 			{
-				if (mapaSinSensor[fil + cont][col + 2] == '?')
-					mapaSinSensor[fil + cont][col + 2] = sensores.terreno[k];
+				if (mapaSinSensor[fil + cont][col - 2] == '?')
+					mapaSinSensor[fil + cont][col - 2] = sensores.terreno[k];
 				cont--;
 			}
 
@@ -240,8 +258,8 @@ void ComportamientoJugador::rellenarMapa(bool sensor_posicion, Sensores sensores
 
 			for (int k = 9; k < 16; k++)
 			{
-				if (mapaSinSensor[fil + cont][col + 2] == '?')
-					mapaSinSensor[fil + cont][col + 2] = sensores.terreno[k];
+				if (mapaSinSensor[fil + cont][col - 3] == '?')
+					mapaSinSensor[fil + cont][col - 3] = sensores.terreno[k];
 				cont--;
 			}
 			break;
@@ -307,7 +325,7 @@ void ComportamientoJugador::rellenarMapa(bool sensor_posicion, Sensores sensores
 			{
 				if (mapaResultado[sensores.posF + 3][sensores.posC + cont] == '?')
 					mapaResultado[sensores.posF + 3][sensores.posC + cont] = sensores.terreno[k];
-				cont --;
+				cont--;
 			}
 			break;
 
