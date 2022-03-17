@@ -2,6 +2,7 @@
 #define COMPORTAMIENTOJUGADOR_H
 
 #include "comportamientos/comportamiento.hpp"
+
 using namespace std;
 
 const int NORTE = 0;
@@ -27,8 +28,19 @@ class ComportamientoJugador : public Comportamiento{
       for(int i=0; i < 199; i++){
         mapaSinSensor.push_back(aux);
       }
+      
+      vector<unsigned char> aux2(16, '?');
+
+      for(int i=0; i < 16; i++){
+        distancias.push_back(aux2);
+      }
 
       hay_objetivo = zapatillas = bikini = false;
+      pos_a_la_vista = bikini_a_la_vista = zapatillas_a_la_vista=  recarga_a_la_vista = -1;
+      poca_bateria = false;
+      posX_objetivo = posY_objetivo = -1;
+      pos_objetivo = -1;
+      cont_mov = -1;
     }
 
     void rellenarMapa(bool sensor_posicion, Sensores sensores);
@@ -46,9 +58,14 @@ class ComportamientoJugador : public Comportamiento{
   bool girar_derecha, bien_situado;
   vector< vector< unsigned char> > mapaSinSensor;
   bool hay_objetivo, zapatillas, bikini;
+  int pos_a_la_vista, bikini_a_la_vista, zapatillas_a_la_vista, recarga_a_la_vista;
+  bool poca_bateria;
+  int posX_objetivo, posY_objetivo, pos_objetivo;
+  int cont_mov;
 
-  vector< vector< int> > posicionesCerca;
 
+  vector< vector< unsigned char> > distancias;
+  vector< Action> accionesPendientes;
   Action ultimaAccion;
 };
 
