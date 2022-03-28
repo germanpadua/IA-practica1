@@ -36,12 +36,15 @@ Action ComportamientoJugador::think(Sensores sensores)
 	cout << "Colisión: " << sensores.colision << endl;
 	cout << "Reset: " << sensores.reset << endl;
 	cout << "Vida: " << sensores.vida << endl;
-	cout << "Objetivo: " << pos_objetivo<< endl;
-	cout << "POS OBJETIVO: " << pos_a_la_vista << endl;
+	cout << "Hay Objetivo: " << hay_objetivo << endl;
+	cout << "AccionesPendientes Size: " << accionesPendientes.size() << endl;
+
 	cout << endl;
 
-	//Actualizar variables de estado
+	// Actualizar variables de estado
 	int cont = -1;
+	no_puede_ir = false;
+	huir = false;
 
 	switch (ultimaAccion)
 	{
@@ -73,8 +76,8 @@ Action ComportamientoJugador::think(Sensores sensores)
 		brujula = (brujula + 1) % 4;
 		girar_derecha = (rand() % 2) == 0;
 		break;
-	default:
-	break;
+	case actIDLE:
+		break;
 	}
 
 	if (sensores.nivel == 0 || sensores.nivel == 1)
@@ -104,11 +107,23 @@ Action ComportamientoJugador::think(Sensores sensores)
 		bien_situado = true;
 	}
 
+	switch (sensores.terreno[0])
+	{
+	case 'D':
+		zapatillas = true;
+		break;
+	case 'K':
+		bikini = true;
+		break;
+	default:
+		break;
+	}
+
 	if (sensores.terreno[0] == 'G' && !bien_situado)
 	{
 		bien_situado = true;
 
-		//Rellenar mapaResultado con mapaSinSensor
+		// Rellenar mapaResultado con mapaSinSensor
 		for (int i = 0; i < mapaResultado.size(); i++)
 		{
 			for (int j = 0; j < mapaResultado.size(); j++)
@@ -123,304 +138,884 @@ Action ComportamientoJugador::think(Sensores sensores)
 		fil = sensores.posF;
 		col = sensores.posC;
 	}
+	else if (sensores.terreno[0] == 'K' && !bikini)
+	{
+		bikini = true;
+	}
+
+	if (sensores.reset)
+	{
+		for (int i = 0; i < mapaSinSensor.size(); i++)
+		{
+			for (int j = 0; j < mapaSinSensor.size(); j++)
+			{
+				mapaSinSensor[i][j] = '?';
+			}
+		}
+
+		fil = col = 99;
+
+		if (sensores.nivel != 0)
+		{
+			brujula = NORTE;
+			bien_situado = false;
+		}
+	}
 
 	rellenarMapa(bien_situado, sensores);
 
-	poca_bateria = sensores.bateria <= 500;
+	poca_bateria = sensores.bateria <= 2500;
 
-	//Decidir qué acción tomar
-
-	if (!hay_objetivo)
+	if (sensores.terreno[2] != 'M')
 	{
-		/*
-		posicionesCerca[3][3] = sensores.terreno[0];
 		switch (brujula)
 		{
-			int cont;
 		case NORTE:
-			cont = 2;
+			cont = -1;
+
 			for (int k = 1; k < 4; k++)
 			{
-				posicionesCerca[2][cont] = sensores.terreno[k];
+
+				mapaContador[fil - 1][col + cont]++;
 				cont++;
 			}
 
-			cont = 1;
+			cont = -2;
+
 			for (int k = 4; k < 9; k++)
 			{
-				posicionesCerca[1][cont] = sensores.terreno[k];
+				mapaContador[fil - 2][col + cont]++;
 				cont++;
 			}
 
-			cont = 0;
+			cont = -3;
+
 			for (int k = 9; k < 16; k++)
 			{
-				posicionesCerca[0][cont] = sensores.terreno[k];
+				mapaContador[fil - 3][col + cont]++;
 				cont++;
 			}
 			break;
+
 		case SUR:
+			cont = 1;
+			for (int k = 1; k < 4; k++)
+			{
+				mapaContador[fil + 1][col + cont]++;
+				cont--;
+			}
+
+			cont = 2;
+
+			for (int k = 4; k < 9; k++)
+			{
+				mapaContador[fil + 2][col + cont]++;
+				cont--;
+			}
+
+			cont = 3;
+
+			for (int k = 9; k < 16; k++)
+			{
+				mapaContador[fil + 3][col + cont]++;
+				cont--;
+			}
+			break;
+
+		case ESTE:
+			cont = -1;
+			for (int k = 1; k < 4; k++)
+			{
+				mapaContador[fil + cont][col + 1]++;
+				cont++;
+			}
+
+			cont = -2;
+
+			for (int k = 4; k < 9; k++)
+			{
+				mapaContador[fil + cont][col + 2]++;
+				cont++;
+			}
+
+			cont = -3;
+
+			for (int k = 9; k < 16; k++)
+			{
+				mapaContador[fil + cont][col + 3]++;
+				cont++;
+			}
+
+			break;
+
+		case OESTE:
+			cont = 1;
 
 			for (int k = 1; k < 4; k++)
 			{
+				mapaContador[fil + cont][col - 1]++;
+				cont--;
 			}
-			break;
-		case ESTE:
-			break;
-		case OESTE:
-			break;
-		}
-		*/
 
-		pos_a_la_vista = bikini_a_la_vista = zapatillas_a_la_vista = recarga_a_la_vista = -1;
-		posX_objetivo = posY_objetivo = -1;
+			cont = 2;
 
-		int k_objetivo = -1;
-
-		for (int k = 15; k > 0; k--)
-		{
-			switch (sensores.terreno[k])
+			for (int k = 4; k < 9; k++)
 			{
-			case 'G':
-				pos_a_la_vista = k;
-				break;
-
-			case 'K':
-				bikini_a_la_vista = k;
-				break;
-
-			case 'D':
-				zapatillas_a_la_vista = k;
-				break;
-
-			case 'X':
-				recarga_a_la_vista = k;
-				break;
-			default:
-			break;
+				mapaContador[fil + cont][col - 2]++;
+				cont--;
 			}
-			
-		}
 
-		if (pos_a_la_vista != -1 && !bien_situado)
-		{
-			k_objetivo = pos_a_la_vista;
-			hay_objetivo = true;
-		}
-		else if (recarga_a_la_vista != -1 && poca_bateria)
-		{
-			k_objetivo = recarga_a_la_vista;
-			hay_objetivo = true;
-		}
-		else if (bikini_a_la_vista != -1 && !bikini)
-		{
-			k_objetivo = bikini_a_la_vista;
-			hay_objetivo = true;
-		}
-		else if (zapatillas_a_la_vista != -1 && !zapatillas)
-		{
-			k_objetivo = zapatillas_a_la_vista;
-			hay_objetivo = true;
-		}
-		/*
-			switch (brujula)
+			cont = 3;
+
+			for (int k = 9; k < 16; k++)
 			{
-			case NORTE:
-				switch (k_objetivo)
-				{
-				case 1:
-				case 2:
-				case 3:
-					posX_objetivo = fil - 1;
-					posY_objetivo = col - 2 + k_objetivo;
-					break;
-
-				case 4:
-				case 5:
-				case 6:
-				case 7:
-				case 8:
-					posX_objetivo = fil - 2;
-					posY_objetivo = col - 6 + k_objetivo;
-					break;
-
-				case 9:
-				case 10:
-				case 11:
-				case 12:
-				case 13:
-				case 14:
-				case 15:
-					posX_objetivo = fil - 3;
-					posY_objetivo = col - 12 + k_objetivo;
-					break;
-				}
-				break;
-			case SUR:
-				switch (k_objetivo)
-				{
-				case 1:
-				case 2:
-				case 3:
-					posX_objetivo = fil + 1;
-					posY_objetivo = col + 2 - k_objetivo;
-					break;
-
-				case 4:
-				case 5:
-				case 6:
-				case 7:
-				case 8:
-					posX_objetivo = fil + 2;
-					posY_objetivo = col + 6 - k_objetivo;
-					break;
-
-				case 9:
-				case 10:
-				case 11:
-				case 12:
-				case 13:
-				case 14:
-				case 15:
-					posX_objetivo = fil + 3;
-					posY_objetivo = col + 12 - k_objetivo;
-					break;
-				}
-				break;
-			case ESTE:
-				switch (k_objetivo)
-				{
-				case 1:
-				case 2:
-				case 3:
-					posX_objetivo = fil - 2 + k_objetivo;
-					posY_objetivo = col + 1;
-					break;
-
-				case 4:
-				case 5:
-				case 6:
-				case 7:
-				case 8:
-					posX_objetivo = fil - 6 + k_objetivo;
-					posY_objetivo = col + 2;
-					break;
-
-				case 9:
-				case 10:
-				case 11:
-				case 12:
-				case 13:
-				case 14:
-				case 15:
-					posX_objetivo = fil - 12 + k_objetivo;
-					posY_objetivo = col + 3;
-					break;
-				}
-
-			case OESTE:
-				switch (k_objetivo)
-				{
-				case 1:
-				case 2:
-				case 3:
-					posX_objetivo = fil + 2 - k_objetivo;
-					posY_objetivo = col - 1;
-					break;
-
-				case 4:
-				case 5:
-				case 6:
-				case 7:
-				case 8:
-					posX_objetivo = fil + 6 - k_objetivo;
-					posY_objetivo = col - 2;
-					break;
-
-				case 9:
-				case 10:
-				case 11:
-				case 12:
-				case 13:
-				case 14:
-				case 15:
-					posX_objetivo = fil + 12 - k_objetivo;
-					posY_objetivo = col - 3;
-					break;
-				}
-				break;
+				mapaContador[fil + cont][col - 3]++;
+				cont--;
 			}
-			*/
-		pos_objetivo = k_objetivo;
-		switch(pos_a_la_vista){
-			case 1:
-				hay_objetivo = true;
-				accionesPendientes.push_back(actFORWARD);
-				accionesPendientes.push_back(actTURN_L);
-				accionesPendientes.push_back(actFORWARD);
 			break;
-			case 2:
-				accionesPendientes.push_back(actFORWARD);
-			break;
-			case 3:
-				hay_objetivo = true;
-				accionesPendientes.push_back(actFORWARD);
-				accionesPendientes.push_back(actTURN_R);
-				accionesPendientes.push_back(actFORWARD);
-			break;
-			case 4:
-			break;
-			case 5:
-			break;
-			case 6:
-			break;
-			case 7:
-			break;
-			case 8:
-			break;
-			case 9:
-			break;
-			case 10:
-			break;
-			case 11:
-			break;
-			case 12:
-			break;
-			case 13:
-			break;
-			case 14:
-			break;
-			case 15:
-			break;
-		}
-		accion = actIDLE;
-
-	}else{
-		if(accionesPendientes.size() > 1){
-			accion = accionesPendientes[accionesPendientes.size() - 1];
-			accionesPendientes.pop_back();
-		}else{
-			hay_objetivo = false;
-			accion = actFORWARD;
 		}
 	}
-/*
-	if ((sensores.terreno[2] == 'T' || sensores.terreno[2] == 'S' || sensores.terreno[2] == 'G') && sensores.superficie[2] == '_')
+
+	// Decidir qué acción tomar
+	if (sensores.terreno[0] == 'X' && poca_bateria)
 	{
-		accion = actFORWARD;
+		hay_objetivo = true;
+	}
+
+/*
+	if(va_por_minimo){
+		accionesPendientes.clear();
+		buscarObjetivo(sensores);
+	}
+*/
+
+	if (accionesPendientes.size() >= 1)
+	{
+		accion = accionesPendientes[accionesPendientes.size() - 1];
+		accionesPendientes.pop_back();
 	}
 	else
 	{
-		if (girar_derecha)
-			accion = actTURN_R;
+		if (sensores.terreno[0] == 'X' && poca_bateria)
+		{
+			accion = actIDLE;
+		}
+		else if (buscarObjetivo(sensores))
+		{
+			accion = accionesPendientes[accionesPendientes.size() - 1];
+			accionesPendientes.pop_back();
+		}
 		else
-			accion = actTURN_L;
+		{
+			cout << "NO HAY OBJETIVO" << endl;
+			if (rand() % 2 == 0)
+			{
+				accion = actTURN_L;
+			}
+			else
+			{
+				accion = actTURN_R;
+			}
+		}
+
+		if (no_puede_ir)
+		{
+			cout << "NO PUEDE IR" << endl;
+
+			if (buscarObjetivoCerca(sensores))
+			{
+				accion = accionesPendientes[accionesPendientes.size() - 1];
+				accionesPendientes.pop_back();
+			}
+			else
+			{
+				if (rand() % 2 == 0)
+				{
+					accion = actTURN_L;
+				}
+				else
+				{
+					accion = actTURN_R;
+				}
+			}
+		}
 	}
-*/
+	/*
+		if (sensores.terreno[2] == 'P')
+		{
+			accionesPendientes.clear();
+			accion = actTURN_L;
+		}
+	*/
+	iteracion++;
+
 	ultimaAccion = accion;
 
 	// Determinar el efecto de la ultima accion enviada
 	return accion;
+}
+
+bool ComportamientoJugador::buscarObjetivoCerca(Sensores sensores)
+{
+	va_por_minimo = false;
+	int cont;
+	pos_a_la_vista = bikini_a_la_vista = zapatillas_a_la_vista = recarga_a_la_vista = -1;
+
+	int k_objetivo = -1;
+
+	for (int k = 3; k > 0; k--)
+	{
+		switch (sensores.terreno[k])
+		{
+		case 'G':
+			pos_a_la_vista = k;
+			break;
+
+		case 'K':
+			bikini_a_la_vista = k;
+			break;
+
+		case 'D':
+			zapatillas_a_la_vista = k;
+			break;
+
+		case 'X':
+			recarga_a_la_vista = k;
+			break;
+		default:
+			break;
+		}
+	}
+
+	if (pos_a_la_vista != -1 && !bien_situado)
+	{
+		k_objetivo = pos_a_la_vista;
+		hay_objetivo = true;
+	}
+	else if (recarga_a_la_vista != -1 && poca_bateria)
+	{
+		k_objetivo = recarga_a_la_vista;
+		hay_objetivo = true;
+	}
+	else if (bikini_a_la_vista != -1 && !bikini)
+	{
+		k_objetivo = bikini_a_la_vista;
+		hay_objetivo = true;
+	}
+	else if (zapatillas_a_la_vista != -1 && !zapatillas)
+	{
+		k_objetivo = zapatillas_a_la_vista;
+		hay_objetivo = true;
+	}
+	else
+	{
+		int min = 99999999;
+		int k_min = -1;
+
+		mapaContador[fil][col] += 5;
+
+		switch (brujula)
+		{
+		case NORTE:
+			cont = -1;
+
+			for (int k = 1; k < 4; k++)
+			{
+				if (mapaContador[fil - 1][col + cont] < min && sensores.terreno[k] != 'P' && sensores.terreno[k] != 'M')
+				{
+					min = mapaContador[fil - 1][col + cont];
+					k_min = k;
+				}
+				cont++;
+			}
+
+			break;
+
+		case SUR:
+			cont = 1;
+			for (int k = 1; k < 4; k++)
+			{
+				if (mapaContador[fil + 1][col + cont] < min && sensores.terreno[k] != 'P' && sensores.terreno[k] != 'M')
+				{
+					min = mapaContador[fil + 1][col + cont];
+					k_min = k;
+				}
+				cont--;
+			}
+
+			break;
+
+		case ESTE:
+			cont = -1;
+			for (int k = 1; k < 4; k++)
+			{
+				if (mapaContador[fil + cont][col + 1] < min && sensores.terreno[k] != 'P' && sensores.terreno[k] != 'M')
+				{
+					min = mapaContador[fil + cont][col + 1];
+					k_min = k;
+				}
+				cont++;
+			}
+
+			break;
+
+		case OESTE:
+			cont = 1;
+
+			for (int k = 1; k < 4; k++)
+			{
+				if (mapaContador[fil + cont][col - 1] < min && sensores.terreno[k] != 'P' && sensores.terreno[k] != 'M')
+				{
+					min = mapaContador[fil + cont][col - 1];
+					k_min = k;
+				}
+				cont--;
+			}
+			break;
+		}
+
+		/*
+		if (((sensores.terreno[k_objetivo] == 'A' && bikini) || (sensores.terreno[k_objetivo] == 'B' && zapatillas)))
+			k_objetivo = k_min;
+		else if (sensores.terreno[k_objetivo] == 'A' || sensores.terreno[k_objetivo] == 'B')
+		{
+		}
+		else if (sensores.terreno[k_objetivo] == 'P' || sensores.terreno[k_objetivo] == 'M')
+		{
+		}
+		else
+		{
+			k_objetivo = k_min;
+		}
+		*/
+		va_por_minimo = true;
+		k_objetivo = k_min;
+	}
+
+	vector<Action> accionesPendientes_aux;
+
+	switch (k_objetivo)
+	{
+
+	case 1:
+		if (sensores.terreno[2] == 'P' || sensores.terreno[2] == 'M' || (sensores.terreno[2] == 'A' && !bikini) || (sensores.terreno[2] == 'B' && !zapatillas) || sensores.terreno[1] == 'P' || sensores.terreno[1] == 'M' || (sensores.terreno[1] == 'A' && !bikini) || (sensores.terreno[1] == 'B' && !zapatillas))
+			no_puede_ir = true;
+		else
+		{
+			accionesPendientes_aux.push_back(actFORWARD);
+			accionesPendientes_aux.push_back(actTURN_L);
+			accionesPendientes_aux.push_back(actFORWARD);
+		}
+		break;
+	case 2:
+		if(sensores.terreno[2] == 'P' || sensores.terreno[2] == 'M' || (sensores.terreno[2] == 'A' && !bikini) || (sensores.terreno[2] == 'B' && !zapatillas)){
+			no_puede_ir = true;
+		}else{
+		accionesPendientes_aux.push_back(actFORWARD);
+		}
+		break;
+	case 3:
+		if (sensores.terreno[2] == 'P' || sensores.terreno[2] == 'M' || (sensores.terreno[2] == 'A' && !bikini) || (sensores.terreno[2] == 'B' && !zapatillas) || sensores.terreno[3] == 'P' || sensores.terreno[3] == 'M' || (sensores.terreno[3] == 'A' && !bikini) || (sensores.terreno[3] == 'B' && !zapatillas))
+			no_puede_ir = true;
+		else
+		{
+			accionesPendientes_aux.push_back(actFORWARD);
+			accionesPendientes_aux.push_back(actTURN_R);
+			accionesPendientes_aux.push_back(actFORWARD);
+		}
+		break;
+	default:
+		break;
+	}
+
+
+
+	for (int i = accionesPendientes_aux.size(); i > 0; i--)
+	{
+		accionesPendientes.push_back(accionesPendientes_aux[accionesPendientes_aux.size() - 1]);
+		accionesPendientes_aux.pop_back();
+	}
+
+	if (k_objetivo != -1)
+	{
+		cout << "OBJETIVO " << k_objetivo << endl;
+	}
+	/*
+	if (sensores.terreno[2] == 'M' || sensores.terreno[2] == 'P')
+	{
+		accionesPendientes.clear();
+		accionesPendientes.push_back(actTURN_R);
+	}
+*/
+	return k_objetivo != -1 && accionesPendientes.size() > 0;
+}
+
+bool ComportamientoJugador::buscarObjetivo(Sensores sensores)
+{
+	va_por_minimo = false;
+	int cont;
+	pos_a_la_vista = bikini_a_la_vista = zapatillas_a_la_vista = recarga_a_la_vista = -1;
+
+	int k_objetivo = -1;
+
+	for (int k = 15; k > 0; k--)
+	{
+		switch (sensores.terreno[k])
+		{
+		case 'G':
+			pos_a_la_vista = k;
+			break;
+
+		case 'K':
+			bikini_a_la_vista = k;
+			break;
+
+		case 'D':
+			zapatillas_a_la_vista = k;
+			break;
+
+		case 'X':
+			recarga_a_la_vista = k;
+			break;
+		default:
+			break;
+		}
+	}
+
+	if (pos_a_la_vista != -1 && !bien_situado)
+	{
+		k_objetivo = pos_a_la_vista;
+		hay_objetivo = true;
+	}
+	else if (recarga_a_la_vista != -1 && poca_bateria)
+	{
+		k_objetivo = recarga_a_la_vista;
+		hay_objetivo = true;
+	}
+	else if (bikini_a_la_vista != -1 && !bikini)
+	{
+		k_objetivo = bikini_a_la_vista;
+		hay_objetivo = true;
+	}
+	else if (zapatillas_a_la_vista != -1 && !zapatillas)
+	{
+		k_objetivo = zapatillas_a_la_vista;
+		hay_objetivo = true;
+	}
+	else if (sensores.terreno[0] == 'A' && !bikini)
+	{
+		for (int i = 15; i > 0; i--)
+		{
+			if (sensores.terreno[i] == 'B' && zapatillas)
+			{
+				k_objetivo = i;
+				hay_objetivo = true;
+				huir = true;
+			}
+			else if (sensores.terreno[i] != 'A' && sensores.terreno[i] != 'M' && sensores.terreno[i] != 'P')
+			{
+				k_objetivo = i;
+				hay_objetivo = true;
+				huir = true;
+			}
+		}
+	}
+	else if (sensores.terreno[0] == 'B' && !zapatillas)
+	{
+		for (int i = 15; i > 0; i--)
+		{
+			if (sensores.terreno[i] == 'A' && bikini)
+			{
+				k_objetivo = i;
+				hay_objetivo = true;
+				huir = true;
+			}
+			else if (sensores.terreno[i] != 'B' && sensores.terreno[i] != 'M' && sensores.terreno[i] != 'P')
+			{
+				k_objetivo = i;
+				hay_objetivo = true;
+				huir = true;
+			}
+		}
+	}
+	else
+	{
+		int min = 99999999;
+		int k_min = -1;
+
+		mapaContador[fil][col] += 5;
+
+		switch (brujula)
+		{
+		case NORTE:
+			cont = -1;
+
+			for (int k = 1; k < 4; k++)
+			{
+				if (mapaContador[fil - 1][col + cont] < min && sensores.terreno[k] != 'P' && sensores.terreno[k] != 'M')
+				{
+					min = mapaContador[fil - 1][col + cont];
+					k_min = k;
+				}
+				cont++;
+			}
+
+			cont = -2;
+
+			for (int k = 4; k < 9; k++)
+			{
+				if (mapaContador[fil - 2][col + cont] < min && sensores.terreno[k] != 'P' && sensores.terreno[k] != 'M')
+				{
+					min = mapaContador[fil - 2][col + cont];
+					k_min = k;
+				}
+				cont++;
+			}
+
+			cont = -3;
+
+			for (int k = 9; k < 16; k++)
+			{
+				if (mapaContador[fil - 3][col + cont] < min && sensores.terreno[k] != 'P' && sensores.terreno[k] != 'M')
+				{
+					min = mapaContador[fil - 3][col + cont];
+					k_min = k;
+				}
+				cont++;
+			}
+			break;
+
+		case SUR:
+			cont = 1;
+			for (int k = 1; k < 4; k++)
+			{
+				if (mapaContador[fil + 1][col + cont] < min && sensores.terreno[k] != 'P' && sensores.terreno[k] != 'M')
+				{
+					min = mapaContador[fil + 1][col + cont];
+					k_min = k;
+				}
+				cont--;
+			}
+
+			cont = 2;
+
+			for (int k = 4; k < 9; k++)
+			{
+				if (mapaContador[fil + 2][col + cont] < min && sensores.terreno[k] != 'P' && sensores.terreno[k] != 'M')
+				{
+					min = mapaContador[fil + 2][col + cont];
+					k_min = k;
+				}
+				cont--;
+			}
+
+			cont = 3;
+
+			for (int k = 9; k < 16; k++)
+			{
+				if (mapaContador[fil + 3][col + cont] < min && sensores.terreno[k] != 'P' && sensores.terreno[k] != 'M')
+				{
+					min = mapaContador[fil + 3][col + cont];
+					k_min = k;
+				}
+				cont--;
+			}
+			break;
+
+		case ESTE:
+			cont = -1;
+			for (int k = 1; k < 4; k++)
+			{
+				if (mapaContador[fil + cont][col + 1] < min && sensores.terreno[k] != 'P' && sensores.terreno[k] != 'M')
+				{
+					min = mapaContador[fil + cont][col + 1];
+					k_min = k;
+				}
+				cont++;
+			}
+
+			cont = -2;
+
+			for (int k = 4; k < 9; k++)
+			{
+				if (mapaContador[fil + cont][col + 2] < min && sensores.terreno[k] != 'P' && sensores.terreno[k] != 'M')
+				{
+					min = mapaContador[fil + cont][col + 2];
+					k_min = k;
+				}
+				cont++;
+			}
+
+			cont = -3;
+
+			for (int k = 9; k < 16; k++)
+			{
+				if (mapaContador[fil + cont][col + 3] < min && sensores.terreno[k] != 'P' && sensores.terreno[k] != 'M')
+				{
+					min = mapaContador[fil + cont][col + 3];
+					k_min = k;
+				}
+				cont++;
+			}
+
+			break;
+
+		case OESTE:
+			cont = 1;
+
+			for (int k = 1; k < 4; k++)
+			{
+				if (mapaContador[fil + cont][col - 1] < min && sensores.terreno[k] != 'P' && sensores.terreno[k] != 'M')
+				{
+					min = mapaContador[fil + cont][col - 1];
+					k_min = k;
+				}
+				cont--;
+			}
+
+			cont = 2;
+
+			for (int k = 4; k < 9; k++)
+			{
+				if (mapaContador[fil + cont][col - 2] < min && sensores.terreno[k] != 'P' && sensores.terreno[k] != 'M')
+				{
+					min = mapaContador[fil + cont][col - 2];
+					k_min = k;
+				}
+
+				cont--;
+			}
+
+			cont = 3;
+
+			for (int k = 9; k < 16; k++)
+			{
+				if (mapaContador[fil + cont][col - 3] < min && sensores.terreno[k] != 'P' && sensores.terreno[k] != 'M')
+				{
+					min = mapaContador[fil + cont][col - 3];
+					k_min = k;
+				}
+				cont--;
+			}
+			break;
+		}
+/*
+		if (((sensores.terreno[k_objetivo] == 'A' && bikini) || (sensores.terreno[k_objetivo] == 'B' && zapatillas)))
+			k_objetivo = k_min;
+		else if (sensores.terreno[k_objetivo] == 'A' || sensores.terreno[k_objetivo] == 'B')
+		{
+		}
+		else if (sensores.terreno[k_objetivo] == 'P' || sensores.terreno[k_objetivo] == 'M')
+		{
+		}
+		else
+		{
+			k_objetivo = k_min;
+		}
+		*/
+		k_objetivo = k_min;
+		va_por_minimo = true;
+	}
+
+	vector<Action> accionesPendientes_aux;
+
+	switch (k_objetivo)
+	{
+
+	case 1:
+		if (!huir && (sensores.terreno[2] == 'P' || sensores.terreno[2] == 'M' || (sensores.terreno[2] == 'A' && !bikini) || (sensores.terreno[2] == 'B' && !zapatillas) || sensores.terreno[1] == 'P' || sensores.terreno[1] == 'M' || (sensores.terreno[1] == 'A' && !bikini) || (sensores.terreno[1] == 'B' && !zapatillas)))
+			no_puede_ir = true;
+		else
+		{
+			accionesPendientes_aux.push_back(actFORWARD);
+			accionesPendientes_aux.push_back(actTURN_L);
+			accionesPendientes_aux.push_back(actFORWARD);
+		}
+		break;
+	case 2:
+		if(!huir && sensores.terreno[2] == 'P' || sensores.terreno[2] == 'M' || (sensores.terreno[2] == 'A' && !bikini) || (sensores.terreno[2] == 'B' && !zapatillas)){
+			no_puede_ir = true;
+		}else{
+		accionesPendientes_aux.push_back(actFORWARD);
+		}
+		break;
+	case 3:
+		if (!huir && (sensores.terreno[2] == 'P' || sensores.terreno[2] == 'M' || (sensores.terreno[2] == 'A' && !bikini) || (sensores.terreno[2] == 'B' && !zapatillas) || sensores.terreno[3] == 'P' || sensores.terreno[3] == 'M' || (sensores.terreno[3] == 'A' && !bikini) || (sensores.terreno[3] == 'B' && !zapatillas)))
+			no_puede_ir = true;
+		else
+		{
+			accionesPendientes_aux.push_back(actFORWARD);
+			accionesPendientes_aux.push_back(actTURN_R);
+			accionesPendientes_aux.push_back(actFORWARD);
+		}
+		break;
+	case 4:
+		if (!huir && ((sensores.terreno[2] == 'P' || sensores.terreno[2] == 'M') || (sensores.terreno[2] == 'A' && !bikini) || (sensores.terreno[2] == 'B' && !zapatillas) || (sensores.terreno[6] == 'P' || sensores.terreno[6] == 'M') || (sensores.terreno[6] == 'A' && !bikini) || (sensores.terreno[6] == 'B' && !zapatillas) || (sensores.terreno[5] == 'P' || sensores.terreno[5] == 'M') || (sensores.terreno[5] == 'A' && !bikini) || (sensores.terreno[5] == 'B' && !zapatillas) || sensores.terreno[4] == 'P' || sensores.terreno[4] == 'M' || (sensores.terreno[4] == 'A' && !bikini) || (sensores.terreno[4] == 'B' && !zapatillas)))
+			no_puede_ir = true;
+		else
+		{
+			accionesPendientes_aux.push_back(actFORWARD);
+			accionesPendientes_aux.push_back(actFORWARD);
+			accionesPendientes_aux.push_back(actTURN_L);
+			accionesPendientes_aux.push_back(actFORWARD);
+			accionesPendientes_aux.push_back(actFORWARD);
+		}
+		break;
+	case 5:
+		if (!huir && ((sensores.terreno[2] == 'P' || sensores.terreno[2] == 'M') || (sensores.terreno[2] == 'A' && !bikini) || (sensores.terreno[2] == 'B' && !zapatillas) || (sensores.terreno[6] == 'P' || sensores.terreno[6] == 'M') || (sensores.terreno[6] == 'A' && !bikini) || (sensores.terreno[6] == 'B' && !zapatillas) || sensores.terreno[5] == 'P' || sensores.terreno[5] == 'M' || (sensores.terreno[5] == 'A' && !bikini) || (sensores.terreno[5] == 'B' && !zapatillas)))
+			no_puede_ir = true;
+		else
+		{
+			accionesPendientes_aux.push_back(actFORWARD);
+			accionesPendientes_aux.push_back(actFORWARD);
+			accionesPendientes_aux.push_back(actTURN_L);
+			accionesPendientes_aux.push_back(actFORWARD);
+		}
+		break;
+	case 6:
+		if (!huir && (sensores.terreno[2] == 'P' || sensores.terreno[2] == 'M' || (sensores.terreno[2] == 'A' && !bikini) || (sensores.terreno[2] == 'B' && !zapatillas) || sensores.terreno[6] == 'P' || sensores.terreno[6] == 'M' || (sensores.terreno[6] == 'A' && !bikini) || (sensores.terreno[6] == 'B' && !zapatillas)))
+			no_puede_ir = true;
+		else
+		{
+			accionesPendientes_aux.push_back(actFORWARD);
+			accionesPendientes_aux.push_back(actFORWARD);
+		}
+		break;
+	case 7:
+		if (!huir && ((sensores.terreno[2] == 'P' || sensores.terreno[2] == 'M') || (sensores.terreno[2] == 'A' && !bikini) || (sensores.terreno[2] == 'B' && !zapatillas) || (sensores.terreno[6] == 'P' || sensores.terreno[6] == 'M') || (sensores.terreno[6] == 'A' && !bikini) || (sensores.terreno[6] == 'B' && !zapatillas) || sensores.terreno[7] == 'P' || sensores.terreno[7] == 'M' || (sensores.terreno[7] == 'A' && !bikini) || (sensores.terreno[7] == 'B' && !zapatillas)))
+			no_puede_ir = true;
+		else
+		{
+			accionesPendientes_aux.push_back(actFORWARD);
+			accionesPendientes_aux.push_back(actFORWARD);
+			accionesPendientes_aux.push_back(actTURN_R);
+			accionesPendientes_aux.push_back(actFORWARD);
+		}
+		break;
+	case 8:
+		if (!huir && ((sensores.terreno[2] == 'P' || sensores.terreno[2] == 'M') || (sensores.terreno[2] == 'A' && !bikini) || (sensores.terreno[2] == 'B' && !zapatillas) || (sensores.terreno[6] == 'P' || sensores.terreno[6] == 'M') || (sensores.terreno[6] == 'A' && !bikini) || (sensores.terreno[6] == 'B' && !zapatillas) || (sensores.terreno[7] == 'P' || sensores.terreno[7] == 'M') || (sensores.terreno[7] == 'A' && !bikini) || (sensores.terreno[7] == 'B' && !zapatillas) || sensores.terreno[8] == 'P' || sensores.terreno[8] == 'M' || (sensores.terreno[8] == 'A' && !bikini) || (sensores.terreno[8] == 'B' && !zapatillas)))
+			no_puede_ir = true;
+		else
+		{
+			accionesPendientes_aux.push_back(actFORWARD);
+			accionesPendientes_aux.push_back(actFORWARD);
+			accionesPendientes_aux.push_back(actTURN_R);
+			accionesPendientes_aux.push_back(actFORWARD);
+			accionesPendientes_aux.push_back(actFORWARD);
+		}
+		break;
+	case 9:
+		if (!huir && ((sensores.terreno[2] == 'P' || sensores.terreno[2] == 'M') || (sensores.terreno[2] == 'A' && !bikini) || (sensores.terreno[2] == 'B' && !zapatillas) || (sensores.terreno[6] == 'P' || sensores.terreno[6] == 'M') || (sensores.terreno[6] == 'A' && !bikini) || (sensores.terreno[6] == 'B' && !zapatillas) || (sensores.terreno[12] == 'P' || sensores.terreno[12] == 'M') || (sensores.terreno[12] == 'A' && !bikini) || (sensores.terreno[12] == 'B' && !zapatillas) || (sensores.terreno[11] == 'P' || sensores.terreno[11] == 'M') || (sensores.terreno[11] == 'A' && !bikini) || (sensores.terreno[11] == 'B' && !zapatillas) || (sensores.terreno[10] == 'P' || sensores.terreno[10] == 'M') || (sensores.terreno[10] == 'A' && !bikini) || (sensores.terreno[10] == 'B' && !zapatillas) || sensores.terreno[9] == 'P' || sensores.terreno[9] == 'M' || (sensores.terreno[9] == 'A' && !bikini) || (sensores.terreno[9] == 'B' && !zapatillas)))
+			no_puede_ir = true;
+		else
+		{
+			accionesPendientes_aux.push_back(actFORWARD);
+			accionesPendientes_aux.push_back(actFORWARD);
+			accionesPendientes_aux.push_back(actFORWARD);
+			accionesPendientes_aux.push_back(actTURN_L);
+			accionesPendientes_aux.push_back(actFORWARD);
+			accionesPendientes_aux.push_back(actFORWARD);
+			accionesPendientes_aux.push_back(actFORWARD);
+		}
+		break;
+	case 10:
+		if (!huir && ((sensores.terreno[2] == 'P' || sensores.terreno[2] == 'M') || (sensores.terreno[2] == 'A' && !bikini) || (sensores.terreno[2] == 'B' && !zapatillas) || (sensores.terreno[6] == 'P' || sensores.terreno[6] == 'M') || (sensores.terreno[6] == 'A' && !bikini) || (sensores.terreno[6] == 'B' && !zapatillas) || (sensores.terreno[12] == 'P' || sensores.terreno[12] == 'M') || (sensores.terreno[12] == 'A' && !bikini) || (sensores.terreno[12] == 'B' && !zapatillas) || (sensores.terreno[11] == 'P' || sensores.terreno[11] == 'M') || (sensores.terreno[11] == 'A' && !bikini) || (sensores.terreno[11] == 'B' && !zapatillas) || sensores.terreno[10] == 'P' || sensores.terreno[10] == 'M' || (sensores.terreno[10] == 'A' && !bikini) || (sensores.terreno[10] == 'B' && !zapatillas)))
+			no_puede_ir = true;
+		else
+		{
+			accionesPendientes_aux.push_back(actFORWARD);
+			accionesPendientes_aux.push_back(actFORWARD);
+			accionesPendientes_aux.push_back(actFORWARD);
+			accionesPendientes_aux.push_back(actTURN_L);
+			accionesPendientes_aux.push_back(actFORWARD);
+			accionesPendientes_aux.push_back(actFORWARD);
+		}
+		break;
+	case 11:
+		if (!huir && ((sensores.terreno[2] == 'P' || sensores.terreno[2] == 'M') || (sensores.terreno[2] == 'A' && !bikini) || (sensores.terreno[2] == 'B' && !zapatillas) || (sensores.terreno[6] == 'P' || sensores.terreno[6] == 'M') || (sensores.terreno[6] == 'A' && !bikini) || (sensores.terreno[6] == 'B' && !zapatillas) || (sensores.terreno[12] == 'P' || sensores.terreno[12] == 'M') || (sensores.terreno[12] == 'A' && !bikini) || (sensores.terreno[12] == 'B' && !zapatillas) || sensores.terreno[11] == 'P' || sensores.terreno[11] == 'M' || (sensores.terreno[11] == 'A' && !bikini) || (sensores.terreno[11] == 'B' && !zapatillas)))
+			no_puede_ir = true;
+		else
+		{
+			accionesPendientes_aux.push_back(actFORWARD);
+			accionesPendientes_aux.push_back(actFORWARD);
+			accionesPendientes_aux.push_back(actFORWARD);
+			accionesPendientes_aux.push_back(actTURN_L);
+			accionesPendientes_aux.push_back(actFORWARD);
+		}
+		break;
+	case 12:
+		if (!huir && ((sensores.terreno[2] == 'P' || sensores.terreno[2] == 'M') || (sensores.terreno[2] == 'A' && !bikini) || (sensores.terreno[2] == 'B' && !zapatillas) || (sensores.terreno[6] == 'P' || sensores.terreno[6] == 'M') || (sensores.terreno[6] == 'A' && !bikini) || (sensores.terreno[6] == 'B' && !zapatillas) || sensores.terreno[12] == 'P' || sensores.terreno[12] == 'M' || (sensores.terreno[12] == 'A' && !bikini) || (sensores.terreno[12] == 'B' && !zapatillas)))
+			no_puede_ir = true;
+		else
+		{
+			accionesPendientes_aux.push_back(actFORWARD);
+			accionesPendientes_aux.push_back(actFORWARD);
+			accionesPendientes_aux.push_back(actFORWARD);
+		}
+		break;
+	case 13:
+		if (!huir && ((sensores.terreno[2] == 'P' || sensores.terreno[2] == 'M') || (sensores.terreno[2] == 'A' && !bikini) || (sensores.terreno[2] == 'B' && !zapatillas) || (sensores.terreno[6] == 'P' || sensores.terreno[6] == 'M') || (sensores.terreno[6] == 'A' && !bikini) || (sensores.terreno[6] == 'B' && !zapatillas) || (sensores.terreno[12] == 'P' || sensores.terreno[12] == 'M') || (sensores.terreno[12] == 'A' && !bikini) || (sensores.terreno[12] == 'B' && !zapatillas) || sensores.terreno[13] == 'P' || sensores.terreno[13] == 'M' || (sensores.terreno[13] == 'A' && !bikini) || (sensores.terreno[13] == 'B' && !zapatillas)))
+			no_puede_ir = true;
+		else
+		{
+			accionesPendientes_aux.push_back(actFORWARD);
+			accionesPendientes_aux.push_back(actFORWARD);
+			accionesPendientes_aux.push_back(actFORWARD);
+			accionesPendientes_aux.push_back(actTURN_R);
+			accionesPendientes_aux.push_back(actFORWARD);
+		}
+		break;
+	case 14:
+		if (!huir && ((sensores.terreno[2] == 'P' || sensores.terreno[2] == 'M') || (sensores.terreno[2] == 'A' && !bikini) || (sensores.terreno[2] == 'B' && !zapatillas) || (sensores.terreno[6] == 'P' || sensores.terreno[6] == 'M') || (sensores.terreno[6] == 'A' && !bikini) || (sensores.terreno[6] == 'B' && !zapatillas) || (sensores.terreno[12] == 'P' || sensores.terreno[12] == 'M') || (sensores.terreno[12] == 'A' && !bikini) || (sensores.terreno[12] == 'B' && !zapatillas) || (sensores.terreno[13] == 'P' || sensores.terreno[13] == 'M') || (sensores.terreno[13] == 'A' && !bikini) || (sensores.terreno[13] == 'B' && !zapatillas) || sensores.terreno[14] == 'P' || sensores.terreno[14] == 'M' || (sensores.terreno[14] == 'A' && !bikini) || (sensores.terreno[14] == 'B' && !zapatillas)))
+			no_puede_ir = true;
+		else
+		{
+			accionesPendientes_aux.push_back(actFORWARD);
+			accionesPendientes_aux.push_back(actFORWARD);
+			accionesPendientes_aux.push_back(actFORWARD);
+			accionesPendientes_aux.push_back(actTURN_R);
+			accionesPendientes_aux.push_back(actFORWARD);
+			accionesPendientes_aux.push_back(actFORWARD);
+		}
+		break;
+	case 15:
+		if (!huir && ((sensores.terreno[2] == 'P' || sensores.terreno[2] == 'M') || (sensores.terreno[2] == 'A' && !bikini) || (sensores.terreno[2] == 'B' && !zapatillas) || (sensores.terreno[6] == 'P' || sensores.terreno[6] == 'M') || (sensores.terreno[6] == 'A' && !bikini) || (sensores.terreno[6] == 'B' && !zapatillas) || (sensores.terreno[12] == 'P' || sensores.terreno[12] == 'M') || (sensores.terreno[12] == 'A' && !bikini) || (sensores.terreno[12] == 'B' && !zapatillas) || (sensores.terreno[13] == 'P' || sensores.terreno[13] == 'M') || (sensores.terreno[13] == 'A' && !bikini) || (sensores.terreno[13] == 'B' && !zapatillas) || (sensores.terreno[14] == 'P' || sensores.terreno[14] == 'M') || (sensores.terreno[14] == 'A' && !bikini) || (sensores.terreno[14] == 'B' && !zapatillas) || sensores.terreno[15] == 'P' || sensores.terreno[15] == 'M' || (sensores.terreno[15] == 'A' && !bikini) || (sensores.terreno[15] == 'B' && !zapatillas)))
+			no_puede_ir = true;
+		else
+		{
+			accionesPendientes_aux.push_back(actFORWARD);
+			accionesPendientes_aux.push_back(actFORWARD);
+			accionesPendientes_aux.push_back(actFORWARD);
+			accionesPendientes_aux.push_back(actTURN_R);
+			accionesPendientes_aux.push_back(actFORWARD);
+			accionesPendientes_aux.push_back(actFORWARD);
+			accionesPendientes_aux.push_back(actFORWARD);
+		}
+		break;
+	default:
+		break;
+	}
+
+	for (int i = accionesPendientes_aux.size(); i > 0; i--)
+	{
+		accionesPendientes.push_back(accionesPendientes_aux[accionesPendientes_aux.size() - 1]);
+		accionesPendientes_aux.pop_back();
+	}
+
+	if (k_objetivo != -1)
+	{
+		cout << "OBJETIVO " << k_objetivo << endl;
+	}
+
+	/*
+	if (sensores.terreno[2] == 'M' || sensores.terreno[2] == 'P')
+	{
+		accionesPendientes.clear();
+		accionesPendientes.push_back(actTURN_R);
+	}
+	*/
+
+	return k_objetivo != -1 && accionesPendientes.size() > 0;
 }
 
 void ComportamientoJugador::rellenarMapa(bool sensor_posicion, Sensores sensores)

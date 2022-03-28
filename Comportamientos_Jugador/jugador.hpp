@@ -24,9 +24,11 @@ class ComportamientoJugador : public Comportamiento{
       bien_situado = false;
       
       vector<unsigned char> aux(199, '?');
+      vector<unsigned int> aux3(199, 0);
 
       for(int i=0; i < 199; i++){
         mapaSinSensor.push_back(aux);
+        mapaContador.push_back(aux3);
       }
       
       vector<unsigned char> aux2(16, '?');
@@ -41,9 +43,15 @@ class ComportamientoJugador : public Comportamiento{
       posX_objetivo = posY_objetivo = -1;
       pos_objetivo = -1;
       cont_mov = -1;
+
+      iteracion = 0;
+      no_puede_ir = huir = va_por_minimo = false;
     }
 
     void rellenarMapa(bool sensor_posicion, Sensores sensores);
+    bool buscarObjetivo(Sensores sensores);
+    bool buscarObjetivoCerca(Sensores sensores);
+
 
     ComportamientoJugador(const ComportamientoJugador & comport) : Comportamiento(comport){}
     ~ComportamientoJugador(){}
@@ -57,6 +65,7 @@ class ComportamientoJugador : public Comportamiento{
   int fil, col, brujula;
   bool girar_derecha, bien_situado;
   vector< vector< unsigned char> > mapaSinSensor;
+
   bool hay_objetivo, zapatillas, bikini;
   int pos_a_la_vista, bikini_a_la_vista, zapatillas_a_la_vista, recarga_a_la_vista;
   bool poca_bateria;
@@ -67,6 +76,16 @@ class ComportamientoJugador : public Comportamiento{
   vector< vector< unsigned char> > distancias;
   vector< Action> accionesPendientes;
   Action ultimaAccion;
+  int contador;
+
+  bool no_puede_ir;
+  bool huir;
+  vector< vector< unsigned int> > mapaContador;
+
+  bool va_por_minimo;
+
+  int iteracion;
+
 };
 
 #endif
