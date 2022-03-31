@@ -49,9 +49,10 @@ class ComportamientoJugador : public Comportamiento{
     }
 
     void rellenarMapa(bool sensor_posicion, Sensores sensores);
-    bool buscarObjetivo(Sensores sensores);
-    bool buscarObjetivoCerca(Sensores sensores);
+    int buscarObjetivo(Sensores sensores);
+    int buscarObjetivoCerca(Sensores sensores);
 
+    bool calcularCamino(Sensores sensores, int objetivo);
 
     ComportamientoJugador(const ComportamientoJugador & comport) : Comportamiento(comport){}
     ~ComportamientoJugador(){}
