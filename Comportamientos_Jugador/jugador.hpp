@@ -24,14 +24,20 @@ class ComportamientoJugador : public Comportamiento{
       bien_situado = false;
       
       vector<unsigned char> aux(199, '?');
+      vector<unsigned char> aux2(16, '?');
       vector<unsigned int> aux3(199, 0);
+      vector<unsigned int> aux4(100, 0);
+
 
       for(int i=0; i < 199; i++){
         mapaSinSensor.push_back(aux);
-        mapaContador.push_back(aux3);
+        mapaContadorAuxiliar.push_back(aux3);
+      }
+
+      for(int i=0; i<100; i++){
+        mapaContadorResultado.push_back(aux3);
       }
       
-      vector<unsigned char> aux2(16, '?');
 
       for(int i=0; i < 16; i++){
         distancias.push_back(aux2);
@@ -46,6 +52,11 @@ class ComportamientoJugador : public Comportamiento{
 
       iteracion = 0;
       no_puede_ir = huir = va_por_minimo = false;
+
+      iteraciones_chocandose = iteraciones_girando = 0;
+
+      posUltimaBateria.first = -1;
+      posUltimaBateria.second = -1;
     }
 
     void rellenarMapa(bool sensor_posicion, Sensores sensores);
@@ -53,6 +64,19 @@ class ComportamientoJugador : public Comportamiento{
     int buscarObjetivoCerca(Sensores sensores);
 
     bool calcularCamino(Sensores sensores, int objetivo);
+    bool calcularCaminoCerca(Sensores sensores, int objetivo);
+    
+    float porcentajeCerca(Sensores sensores);
+    int buscarMuerte(Sensores sensores);
+    bool puedeIrMuerte(Sensores sensores, int casilla);
+
+    bool puedeIr(Sensores sensores, int dest);
+    bool puedeIrSinEquipar(Sensores sensores, int dest);
+
+    float porcentajeNorte(Sensores sensores);
+    float porcentajeSur(Sensores sensores);
+    float porcentajeEste(Sensores sensores);
+    float porcentajeOeste(Sensores sensores);
 
     ComportamientoJugador(const ComportamientoJugador & comport) : Comportamiento(comport){}
     ~ComportamientoJugador(){}
@@ -81,11 +105,15 @@ class ComportamientoJugador : public Comportamiento{
 
   bool no_puede_ir;
   bool huir;
-  vector< vector< unsigned int> > mapaContador;
-
+  vector< vector< unsigned int> > mapaContadorAuxiliar;
+  vector< vector< unsigned int> > mapaContadorResultado;
   bool va_por_minimo;
 
   int iteracion;
+  int iteraciones_chocandose;
+  int iteraciones_girando;
+
+  pair<int , int> posUltimaBateria;
 
 };
 
