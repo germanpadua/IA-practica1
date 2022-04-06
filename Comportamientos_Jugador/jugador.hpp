@@ -32,12 +32,9 @@ class ComportamientoJugador : public Comportamiento{
       for(int i=0; i < 199; i++){
         mapaSinSensor.push_back(aux);
         mapaContadorAuxiliar.push_back(aux3);
-      }
-
-      for(int i=0; i<100; i++){
         mapaContadorResultado.push_back(aux3);
+
       }
-      
 
       for(int i=0; i < 16; i++){
         distancias.push_back(aux2);
@@ -73,10 +70,7 @@ class ComportamientoJugador : public Comportamiento{
     bool puedeIr(Sensores sensores, int dest);
     bool puedeIrSinEquipar(Sensores sensores, int dest);
 
-    float porcentajeNorte(Sensores sensores);
-    float porcentajeSur(Sensores sensores);
-    float porcentajeEste(Sensores sensores);
-    float porcentajeOeste(Sensores sensores);
+    bool loboCerca(Sensores sensores);
 
     ComportamientoJugador(const ComportamientoJugador & comport) : Comportamiento(comport){}
     ~ComportamientoJugador(){}

@@ -46,26 +46,29 @@ Action ComportamientoJugador::think(Sensores sensores)
 	no_puede_ir = false;
 	huir = false;
 
-	if (sensores.nivel == 0 || sensores.nivel == 1)
+	if (sensores.reset)
 	{
-		switch (sensores.sentido)
+		ultimaAccion = actIDLE;
+		accionesPendientes.clear();
+		for (int i = 0; i < mapaSinSensor.size(); i++)
 		{
-		case norte:
-			brujula = NORTE;
-			break;
-
-		case sur:
-			brujula = SUR;
-			break;
-
-		case este:
-			brujula = ESTE;
-			break;
-
-		case oeste:
-			brujula = OESTE;
-			break;
+			for (int j = 0; j < mapaSinSensor.size(); j++)
+			{
+				mapaSinSensor[i][j] = '?';
+				mapaContadorAuxiliar[i][j] = 0;
+			}
 		}
+
+		if (sensores.nivel != 0)
+		{
+			bien_situado = false;
+			fil = col = 99;
+		}
+		if (sensores.nivel >= 2)
+			brujula = NORTE;
+
+		bikini = false;
+		zapatillas = false;
 	}
 
 	if (sensores.colision)
@@ -73,30 +76,6 @@ Action ComportamientoJugador::think(Sensores sensores)
 		accionesPendientes.push_back(ultimaAccion);
 		iteraciones_chocandose++;
 		ultimaAccion = actIDLE;
-	}
-
-	if(ultimaAccion == actTURN_L || ultimaAccion == actTURN_R){
-		iteraciones_girando ++;
-	}else{
-		iteraciones_girando = 0;
-	}
-
-	if(iteraciones_girando > 2){
-		huir = true;
-	}
-
-	if (iteraciones_chocandose > 4)
-	{
-		accionesPendientes.clear();
-		if (rand() % 2 == 0)
-		{
-			accionesPendientes.push_back(actTURN_L);
-		}
-		else
-		{
-			accionesPendientes.push_back(actTURN_R);
-		}
-		iteraciones_chocandose = 0;
 	}
 
 	switch (ultimaAccion)
@@ -131,6 +110,56 @@ Action ComportamientoJugador::think(Sensores sensores)
 		break;
 	}
 
+	if (sensores.nivel == 0 || sensores.nivel == 1)
+	{
+		switch (sensores.sentido)
+		{
+		case norte:
+			brujula = NORTE;
+			break;
+
+		case sur:
+			brujula = SUR;
+			break;
+
+		case este:
+			brujula = ESTE;
+			break;
+
+		case oeste:
+			brujula = OESTE;
+			break;
+		}
+	}
+
+	if (ultimaAccion == actTURN_L || ultimaAccion == actTURN_R)
+	{
+		iteraciones_girando++;
+	}
+	else
+	{
+		iteraciones_girando = 0;
+	}
+
+	if (iteraciones_girando > 2)
+	{
+		huir = true;
+	}
+
+	if (iteraciones_chocandose > 4)
+	{
+		accionesPendientes.clear();
+		if (rand() % 2 == 0)
+		{
+			accionesPendientes.push_back(actTURN_L);
+		}
+		else
+		{
+			accionesPendientes.push_back(actTURN_R);
+		}
+		iteraciones_chocandose = 0;
+	}
+
 	if (sensores.nivel == 0)
 	{
 		bien_situado = true;
@@ -159,7 +188,7 @@ Action ComportamientoJugador::think(Sensores sensores)
 		{
 			for (int j = 0; j < mapaResultado.size(); j++)
 			{
-				if (mapaSinSensor[fil - sensores.posF + i][col - sensores.posC + j] != '?')
+				if (mapaSinSensor[fil - sensores.posF + i][col - sensores.posC + j] != '?' && mapaResultado[i][j] == '?')
 				{
 					mapaResultado[i][j] = mapaSinSensor[fil - sensores.posF + i][col - sensores.posC + j];
 				}
@@ -172,32 +201,14 @@ Action ComportamientoJugador::think(Sensores sensores)
 		col = sensores.posC;
 	}
 
-	if (sensores.reset)
-	{
-
-		for (int i = 0; i < mapaSinSensor.size(); i++)
-		{
-			for (int j = 0; j < mapaSinSensor.size(); j++)
-			{
-				mapaSinSensor[i][j] = '?';
-				mapaContadorAuxiliar[i][j] = 0;
-			}
-		}
-
-		fil = col = 99;
-
-		if (sensores.nivel != 0)
-		{
-			brujula = NORTE;
-			bien_situado = false;
-		}
-		bikini = false;
-		zapatillas = false;
-	}
-
 	rellenarMapa(bien_situado, sensores);
 
 	poca_bateria = sensores.bateria <= 2500;
+
+	if (sensores.vida > 4000)
+		poca_bateria = sensores.bateria <= 3500;
+	else
+		poca_bateria = sensores.bateria <= (sensores.vida + 200);
 
 	// Decidir qué acción tomar
 	if (sensores.terreno[0] == 'X' && poca_bateria)
@@ -205,7 +216,120 @@ Action ComportamientoJugador::think(Sensores sensores)
 		hay_objetivo = true;
 	}
 
-	if (accionesPendientes.size() >= 1)
+	if (porcentajeCerca(sensores) >= 95)
+	{
+		// se puede morir
+		if (accionesPendientes.size() == 0)
+		{
+			int obj = buscarMuerte(sensores);
+
+			if (obj != -1)
+			{
+				if (puedeIrMuerte(sensores, obj))
+				{
+					cout << "VA HACIA MUERTE" << endl;
+					calcularCamino(sensores, obj);
+				}
+				else
+				{
+					if (sensores.terreno[2] != 'M')
+					{
+						accion = actFORWARD;
+					}
+					else
+					{
+						if (rand() % 2 == 0)
+						{
+							accion = actTURN_L;
+						}
+						else
+						{
+							accion = actTURN_R;
+						}
+					}
+				}
+			}
+			else
+			{
+				int obj = buscarObjetivo(sensores);
+				cout << "E" << endl;
+
+				if (sensores.terreno[0] == 'X' && poca_bateria)
+				{
+					accion = actIDLE;
+				}
+				else if (obj != -1)
+				{
+					if (huir && puedeIr(sensores, obj) || !huir && puedeIrSinEquipar(sensores, obj))
+					{
+						cout << "F" << endl;
+						calcularCamino(sensores, obj);
+						cout << "G" << endl;
+						accion = accionesPendientes[accionesPendientes.size() - 1];
+						accionesPendientes.pop_back();
+					}
+				}
+				else
+				{
+					cout << "NO HAY OBJETIVO" << endl;
+					if (rand() % 2 == 0)
+					{
+						accion = actTURN_L;
+					}
+					else
+					{
+						accion = actTURN_R;
+					}
+				}
+
+				if (!(huir && puedeIr(sensores, obj) || !huir && puedeIrSinEquipar(sensores, obj)))
+				{
+					cout << "NO PUEDE IR" << endl;
+					int obj = buscarObjetivoCerca(sensores);
+
+					if (obj != -1)
+					{
+
+						if (huir && puedeIr(sensores, obj) || !huir && puedeIrSinEquipar(sensores, obj))
+						{
+							calcularCamino(sensores, obj);
+							accion = accionesPendientes[accionesPendientes.size() - 1];
+							accionesPendientes.pop_back();
+						}
+						else
+						{
+
+							if (rand() % 2 == 0)
+							{
+								accion = actTURN_L;
+							}
+							else
+							{
+								accion = actTURN_R;
+							}
+						}
+					}
+					else
+					{
+						if (rand() % 2 == 0)
+						{
+							accion = actTURN_L;
+						}
+						else
+						{
+							accion = actTURN_R;
+						}
+					}
+				}
+			}
+		}
+		else
+		{
+			accion = accionesPendientes[accionesPendientes.size() - 1];
+			accionesPendientes.pop_back();
+		}
+	}
+	else if (accionesPendientes.size() >= 1)
 	{
 		cout << "A" << endl;
 		int obj = buscarObjetivo(sensores);
@@ -229,12 +353,24 @@ Action ComportamientoJugador::think(Sensores sensores)
 				accion = accionesPendientes[accionesPendientes.size() - 1];
 				accionesPendientes.pop_back();
 			}
-
 		}
 		else
 		{
 			accion = accionesPendientes[accionesPendientes.size() - 1];
 			accionesPendientes.pop_back();
+		}
+
+		if(loboCerca(sensores)){
+			accionesPendientes.clear();
+			cout << "LOBO CERQUITA :O" << endl;
+			if (rand() % 2 == 0)
+			{
+				accion = actTURN_L;
+			}
+			else
+			{
+				accion = actTURN_R;
+			}
 		}
 	}
 	else
@@ -248,7 +384,8 @@ Action ComportamientoJugador::think(Sensores sensores)
 		}
 		else if (obj != -1)
 		{
-			if(huir && puedeIr(sensores, obj) || !huir && puedeIrSinEquipar(sensores, obj)){
+			if (huir && puedeIr(sensores, obj) || !huir && puedeIrSinEquipar(sensores, obj))
+			{
 				cout << "F" << endl;
 				calcularCamino(sensores, obj);
 				cout << "G" << endl;
@@ -306,6 +443,19 @@ Action ComportamientoJugador::think(Sensores sensores)
 				{
 					accion = actTURN_R;
 				}
+			}
+		}
+
+		if(loboCerca(sensores)){
+			accionesPendientes.clear();
+			cout << "LOBO CERQUITA :O" << endl;
+			if (rand() % 2 == 0)
+			{
+				accion = actTURN_L;
+			}
+			else
+			{
+				accion = actTURN_R;
 			}
 		}
 	}
@@ -613,12 +763,13 @@ int ComportamientoJugador::buscarObjetivoCerca(Sensores sensores)
 	if (k_objetivo != -1)
 	{
 		cout << "OBJETIVO CERCA " << k_objetivo << endl;
-	}else{
-		if(sensores.terreno[2] != 'P' && sensores.terreno[2] != 'M')
+	}
+	else
+	{
+		if (sensores.terreno[2] != 'P' && sensores.terreno[2] != 'M')
 			k_objetivo = 2;
 	}
 
-	
 	/*
 	if (sensores.terreno[2] == 'M' || sensores.terreno[2] == 'P')
 	{
@@ -870,21 +1021,20 @@ int ComportamientoJugador::buscarObjetivo(Sensores sensores)
 				cont = -1;
 				for (int k = 1; k < 4; k++)
 				{
-					if (mapaContadorResultado[fil - 1][col + cont] < min && sensores.terreno[k] != 'P' && sensores.terreno[k] != 'M')
+					if (mapaContadorResultado[sensores.posF - 1][sensores.posC + cont] < min && sensores.terreno[k] != 'P' && sensores.terreno[k] != 'M')
 					{
-						min = mapaContadorResultado[fil - 1][col + cont];
+						min = mapaContadorResultado[sensores.posF - 1][sensores.posC + cont];
 						k_min = k;
 					}
 					cont++;
 				}
 
 				cont = -2;
-
 				for (int k = 4; k < 9; k++)
 				{
-					if (mapaContadorResultado[fil - 2][col + cont] < min && sensores.terreno[k] != 'P' && sensores.terreno[k] != 'M')
+					if (mapaContadorResultado[sensores.posF - 2][sensores.posC + cont] < min && sensores.terreno[k] != 'P' && sensores.terreno[k] != 'M')
 					{
-						min = mapaContadorResultado[fil - 2][col + cont];
+						min = mapaContadorResultado[sensores.posF - 2][sensores.posC + cont];
 						k_min = k;
 					}
 					cont++;
@@ -894,15 +1044,15 @@ int ComportamientoJugador::buscarObjetivo(Sensores sensores)
 
 				for (int k = 9; k < 16; k++)
 				{
-					if (mapaContadorResultado[fil - 3][col + cont] < min && sensores.terreno[k] != 'P' && sensores.terreno[k] != 'M')
+					if (mapaContadorResultado[sensores.posF - 3][sensores.posC + cont] < min && sensores.terreno[k] != 'P' && sensores.terreno[k] != 'M')
 					{
-						min = mapaContadorResultado[fil - 3][col + cont];
+						min = mapaContadorResultado[sensores.posF - 3][sensores.posC + cont];
 						k_min = k;
 					}
 					cont++;
 				}
 
-				if (min == mapaContadorResultado[fil - 3][col])
+				if (min == mapaContadorResultado[sensores.posF - 3][sensores.posC])
 				{
 					k_min = 12;
 				}
@@ -911,13 +1061,13 @@ int ComportamientoJugador::buscarObjetivo(Sensores sensores)
 
 			case SUR:
 				cont = 1;
-				// min = mapaContador[fil + 3][col];
+				// min = mapaContador[sensores.posF + 3][sensores.posC];
 
 				for (int k = 1; k < 4; k++)
 				{
-					if (mapaContadorResultado[fil + 1][col + cont] < min && sensores.terreno[k] != 'P' && sensores.terreno[k] != 'M')
+					if (mapaContadorResultado[sensores.posF + 1][sensores.posC + cont] < min && sensores.terreno[k] != 'P' && sensores.terreno[k] != 'M')
 					{
-						min = mapaContadorResultado[fil + 1][col + cont];
+						min = mapaContadorResultado[sensores.posF + 1][sensores.posC + cont];
 						k_min = k;
 					}
 					cont--;
@@ -927,9 +1077,9 @@ int ComportamientoJugador::buscarObjetivo(Sensores sensores)
 
 				for (int k = 4; k < 9; k++)
 				{
-					if (mapaContadorResultado[fil + 2][col + cont] < min && sensores.terreno[k] != 'P' && sensores.terreno[k] != 'M')
+					if (mapaContadorResultado[sensores.posF + 2][sensores.posC + cont] < min && sensores.terreno[k] != 'P' && sensores.terreno[k] != 'M')
 					{
-						min = mapaContadorResultado[fil + 2][col + cont];
+						min = mapaContadorResultado[sensores.posF + 2][sensores.posC + cont];
 						k_min = k;
 					}
 					cont--;
@@ -939,15 +1089,15 @@ int ComportamientoJugador::buscarObjetivo(Sensores sensores)
 
 				for (int k = 9; k < 16; k++)
 				{
-					if (mapaContadorResultado[fil + 3][col + cont] < min && sensores.terreno[k] != 'P' && sensores.terreno[k] != 'M')
+					if (mapaContadorResultado[sensores.posF + 3][sensores.posC + cont] < min && sensores.terreno[k] != 'P' && sensores.terreno[k] != 'M')
 					{
-						min = mapaContadorResultado[fil + 3][col + cont];
+						min = mapaContadorResultado[sensores.posF + 3][sensores.posC + cont];
 						k_min = k;
 					}
 					cont--;
 				}
 
-				if (min == mapaContadorResultado[fil + 3][col])
+				if (min == mapaContadorResultado[sensores.posF + 3][sensores.posC])
 				{
 					k_min = 12;
 				}
@@ -956,13 +1106,13 @@ int ComportamientoJugador::buscarObjetivo(Sensores sensores)
 
 			case ESTE:
 				cont = -1;
-				// min = mapaContador[fil][col + 3];
+				// min = mapaContador[sensores.posF][sensores.posC + 3];
 
 				for (int k = 1; k < 4; k++)
 				{
-					if (mapaContadorResultado[fil + cont][col + 1] < min && sensores.terreno[k] != 'P' && sensores.terreno[k] != 'M')
+					if (mapaContadorResultado[sensores.posF + cont][sensores.posC + 1] < min && sensores.terreno[k] != 'P' && sensores.terreno[k] != 'M')
 					{
-						min = mapaContadorResultado[fil + cont][col + 1];
+						min = mapaContadorResultado[sensores.posF + cont][sensores.posC + 1];
 						k_min = k;
 					}
 					cont++;
@@ -972,9 +1122,9 @@ int ComportamientoJugador::buscarObjetivo(Sensores sensores)
 
 				for (int k = 4; k < 9; k++)
 				{
-					if (mapaContadorResultado[fil + cont][col + 2] < min && sensores.terreno[k] != 'P' && sensores.terreno[k] != 'M')
+					if (mapaContadorResultado[sensores.posF + cont][sensores.posC + 2] < min && sensores.terreno[k] != 'P' && sensores.terreno[k] != 'M')
 					{
-						min = mapaContadorResultado[fil + cont][col + 2];
+						min = mapaContadorResultado[sensores.posF + cont][sensores.posC + 2];
 						k_min = k;
 					}
 					cont++;
@@ -984,15 +1134,15 @@ int ComportamientoJugador::buscarObjetivo(Sensores sensores)
 
 				for (int k = 9; k < 16; k++)
 				{
-					if (mapaContadorResultado[fil + cont][col + 3] < min && sensores.terreno[k] != 'P' && sensores.terreno[k] != 'M')
+					if (mapaContadorResultado[sensores.posF + cont][sensores.posC + 3] < min && sensores.terreno[k] != 'P' && sensores.terreno[k] != 'M')
 					{
-						min = mapaContadorResultado[fil + cont][col + 3];
+						min = mapaContadorResultado[sensores.posF + cont][sensores.posC + 3];
 						k_min = k;
 					}
 					cont++;
 				}
 
-				if (min == mapaContadorResultado[fil][col + 3])
+				if (min == mapaContadorResultado[sensores.posF][sensores.posC + 3])
 				{
 					k_min = 12;
 				}
@@ -1001,12 +1151,12 @@ int ComportamientoJugador::buscarObjetivo(Sensores sensores)
 
 			case OESTE:
 				cont = 1;
-				// min = mapaContador[fil][col - 3];
+				// min = mapaContador[sensores.posF][sensores.posC - 3];
 				for (int k = 1; k < 4; k++)
 				{
-					if (mapaContadorResultado[fil + cont][col - 1] < min && sensores.terreno[k] != 'P' && sensores.terreno[k] != 'M')
+					if (mapaContadorResultado[sensores.posF + cont][sensores.posC - 1] < min && sensores.terreno[k] != 'P' && sensores.terreno[k] != 'M')
 					{
-						min = mapaContadorResultado[fil + cont][col - 1];
+						min = mapaContadorResultado[sensores.posF + cont][sensores.posC - 1];
 						k_min = k;
 					}
 					cont--;
@@ -1016,9 +1166,9 @@ int ComportamientoJugador::buscarObjetivo(Sensores sensores)
 
 				for (int k = 4; k < 9; k++)
 				{
-					if (mapaContadorResultado[fil + cont][col - 2] < min && sensores.terreno[k] != 'P' && sensores.terreno[k] != 'M')
+					if (mapaContadorResultado[sensores.posF + cont][sensores.posC - 2] < min && sensores.terreno[k] != 'P' && sensores.terreno[k] != 'M')
 					{
-						min = mapaContadorResultado[fil + cont][col - 2];
+						min = mapaContadorResultado[sensores.posF + cont][sensores.posC - 2];
 						k_min = k;
 					}
 
@@ -1029,15 +1179,15 @@ int ComportamientoJugador::buscarObjetivo(Sensores sensores)
 
 				for (int k = 9; k < 16; k++)
 				{
-					if (mapaContadorResultado[fil + cont][col - 3] < min && sensores.terreno[k] != 'P' && sensores.terreno[k] != 'M')
+					if (mapaContadorResultado[sensores.posF + cont][sensores.posC - 3] < min && sensores.terreno[k] != 'P' && sensores.terreno[k] != 'M')
 					{
-						min = mapaContadorResultado[fil + cont][col - 3];
+						min = mapaContadorResultado[sensores.posF + cont][sensores.posC - 3];
 						k_min = k;
 					}
 					cont--;
 				}
 
-				if (min == mapaContadorResultado[fil][col - 3])
+				if (min == mapaContadorResultado[sensores.posF][sensores.posC - 3])
 				{
 					k_min = 12;
 				}
@@ -1233,7 +1383,8 @@ int ComportamientoJugador::buscarObjetivo(Sensores sensores)
 		va_por_minimo = true;
 	}
 
-	if(sensores.terreno[2] == 'M' || sensores.terreno[2] == 'P'){
+	if (sensores.terreno[2] == 'M' || sensores.terreno[2] == 'P')
+	{
 		k_objetivo = -1;
 	}
 
@@ -1249,7 +1400,7 @@ void ComportamientoJugador::rellenarMapa(bool sensor_posicion, Sensores sensores
 		if (mapaSinSensor[fil][col] == '?')
 			mapaSinSensor[fil][col] = sensores.terreno[0];
 
-		mapaContadorAuxiliar[fil][col] += 8;
+		mapaContadorAuxiliar[fil][col] = mapaContadorAuxiliar[fil][col] + 8;
 
 		switch (brujula)
 		{
@@ -1420,16 +1571,18 @@ void ComportamientoJugador::rellenarMapa(bool sensor_posicion, Sensores sensores
 	else
 	{
 		cout << "I" << endl;
+		cout << sensores.posF << "   " << sensores.posC << endl;
+
 		if (mapaResultado[sensores.posF][sensores.posC] == '?')
 			mapaResultado[sensores.posF][sensores.posC] = sensores.terreno[0];
-
-		mapaContadorResultado[sensores.posF][sensores.posC] += 8;
-
+		cout << "fnapf" << endl;
+		mapaContadorResultado[sensores.posF][sensores.posC] = mapaContadorResultado[sensores.posF][sensores.posC] + 8;
+		cout << "ainainf" << endl;
 		switch (brujula)
 		{
 		case NORTE:
 			cont = -1;
-
+			cout << "PRIMERO" << endl;
 			for (int k = 1; k < 4; k++)
 			{
 				if (mapaResultado[sensores.posF - 1][sensores.posC + cont] == '?')
@@ -1442,6 +1595,7 @@ void ComportamientoJugador::rellenarMapa(bool sensor_posicion, Sensores sensores
 			}
 
 			cont = -2;
+			cout << "SEGUNDO" << endl;
 
 			for (int k = 4; k < 9; k++)
 			{
@@ -1455,6 +1609,7 @@ void ComportamientoJugador::rellenarMapa(bool sensor_posicion, Sensores sensores
 			}
 
 			cont = -3;
+			cout << "TERCERO" << endl;
 
 			for (int k = 9; k < 16; k++)
 			{
@@ -1470,6 +1625,8 @@ void ComportamientoJugador::rellenarMapa(bool sensor_posicion, Sensores sensores
 
 		case SUR:
 			cont = 1;
+			cout << "PRIMERO" << endl;
+
 			for (int k = 1; k < 4; k++)
 			{
 				if (mapaResultado[sensores.posF + 1][sensores.posC + cont] == '?')
@@ -1482,6 +1639,7 @@ void ComportamientoJugador::rellenarMapa(bool sensor_posicion, Sensores sensores
 			}
 
 			cont = 2;
+			cout << "SEGUNDO" << endl;
 
 			for (int k = 4; k < 9; k++)
 			{
@@ -1495,12 +1653,12 @@ void ComportamientoJugador::rellenarMapa(bool sensor_posicion, Sensores sensores
 			}
 
 			cont = 3;
+			cout << "TERCERO" << endl;
 
 			for (int k = 9; k < 16; k++)
 			{
 				if (mapaResultado[sensores.posF + 3][sensores.posC + cont] == '?')
 					mapaResultado[sensores.posF + 3][sensores.posC + cont] = sensores.terreno[k];
-
 				if (sensores.terreno[2] != 'M')
 					mapaContadorResultado[sensores.posF + 3][sensores.posC + cont]++;
 
@@ -1510,6 +1668,8 @@ void ComportamientoJugador::rellenarMapa(bool sensor_posicion, Sensores sensores
 
 		case ESTE:
 			cont = -1;
+			cout << "PRIMERO" << endl;
+
 			for (int k = 1; k < 4; k++)
 			{
 				if (mapaResultado[sensores.posF + cont][sensores.posC + 1] == '?')
@@ -1522,6 +1682,7 @@ void ComportamientoJugador::rellenarMapa(bool sensor_posicion, Sensores sensores
 			}
 
 			cont = -2;
+			cout << "SEGUNDO" << endl;
 
 			for (int k = 4; k < 9; k++)
 			{
@@ -1535,6 +1696,7 @@ void ComportamientoJugador::rellenarMapa(bool sensor_posicion, Sensores sensores
 			}
 
 			cont = -3;
+			cout << "TERCERO" << endl;
 
 			for (int k = 9; k < 16; k++)
 			{
@@ -1551,6 +1713,7 @@ void ComportamientoJugador::rellenarMapa(bool sensor_posicion, Sensores sensores
 
 		case OESTE:
 			cont = 1;
+			cout << "PRIMERO" << endl;
 
 			for (int k = 1; k < 4; k++)
 			{
@@ -1564,6 +1727,7 @@ void ComportamientoJugador::rellenarMapa(bool sensor_posicion, Sensores sensores
 			}
 
 			cont = 2;
+			cout << "SEGUNDO" << endl;
 
 			for (int k = 4; k < 9; k++)
 			{
@@ -1577,6 +1741,7 @@ void ComportamientoJugador::rellenarMapa(bool sensor_posicion, Sensores sensores
 			}
 
 			cont = 3;
+			cout << "TERCERO" << endl;
 
 			for (int k = 9; k < 16; k++)
 			{
@@ -1604,7 +1769,7 @@ float ComportamientoJugador::porcentajeCerca(Sensores sensores)
 		{
 			for (int j = -10; j < 11 && (j + col) < mapaResultado.size(); j++)
 			{
-				if ((i + fil) > 0 && (j + col) > 0)
+				if ((i + fil) >= 0 && (j + col) >= 0)
 				{
 					if (mapaResultado[fil + i][col + j] != '?')
 					{
@@ -1619,7 +1784,13 @@ float ComportamientoJugador::porcentajeCerca(Sensores sensores)
 	{
 		return 0;
 	}
-	return 100 * (resultado / total);
+
+	if (total <= 333)
+	{
+		return 0;
+	}
+	else
+		return 100 * (resultado / total);
 }
 
 int ComportamientoJugador::buscarMuerte(Sensores sensores)
@@ -1726,115 +1897,10 @@ bool ComportamientoJugador::puedeIrMuerte(Sensores sensores, int casilla)
 	return puede;
 }
 
-float ComportamientoJugador::porcentajeNorte(Sensores sensores)
-{
-	float contador = 0;
-	float total = 0;
-
-	if (bien_situado)
-	{
-		for (int i = fil - 1; i >= 0; i--)
-		{
-			for (int j = col - 3; j >= col + 3; j++)
-			{
-				if (mapaResultado[i][j] != '?')
-				{
-					contador++;
-				}
-				total++;
-			}
-		}
-	}
-	else
-	{
-		return 0;
-	}
-	return contador / total;
-}
-
-float ComportamientoJugador::porcentajeSur(Sensores sensores)
-{
-	float contador = 0;
-	float total = 0;
-
-	if (bien_situado)
-	{
-		for (int i = fil + 1; i < mapaResultado.size(); i++)
-		{
-			for (int j = col - 3; j >= col + 3; j++)
-			{
-				if (mapaResultado[i][j] != '?')
-				{
-					contador++;
-				}
-				total++;
-			}
-		}
-	}
-	else
-	{
-		return 0;
-	}
-	return contador / total;
-}
-
-float ComportamientoJugador::porcentajeEste(Sensores sensores)
-{
-	float contador = 0;
-	float total = 0;
-
-	if (bien_situado)
-	{
-		for (int j = col + 1; j < mapaResultado.size(); j++)
-		{
-			for (int i = fil - 3; i >= fil + 3; i++)
-			{
-				if (mapaResultado[i][j] != '?')
-				{
-					contador++;
-				}
-				total++;
-			}
-		}
-	}
-	else
-	{
-		return 0;
-	}
-	return contador / total;
-}
-
-float ComportamientoJugador::porcentajeOeste(Sensores sensores)
-{
-	float contador = 0;
-	float total = 0;
-
-	if (bien_situado)
-	{
-		for (int j = col - 1; j >= 0; j--)
-		{
-			for (int i = fil - 3; i >= fil + 3; i++)
-			{
-				if (mapaResultado[i][j] != '?')
-				{
-					contador++;
-				}
-				total++;
-			}
-		}
-	}
-	else
-	{
-		return 0;
-	}
-	return contador / total;
-}
-
 int ComportamientoJugador::interact(Action accion, int valor)
 {
 	return false;
 }
-
 
 bool ComportamientoJugador::puedeIr(Sensores sensores, int dest)
 {
@@ -1908,6 +1974,14 @@ bool ComportamientoJugador::puedeIr(Sensores sensores, int dest)
 	return puede;
 }
 
+bool ComportamientoJugador::loboCerca(Sensores sensores){
+	bool lobo = false;
+	for(int i=1; i<4; i++){
+		if(sensores.superficie[i] == 'l')
+			lobo = true;
+	}
+	return lobo;
+}
 
 bool ComportamientoJugador::puedeIrSinEquipar(Sensores sensores, int dest)
 {
